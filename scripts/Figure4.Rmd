@@ -1,0 +1,108 @@
+---
+title: "Figure 4"
+author: " Kshitij Tandon"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+    css: styles.css  # Custom CSS for font size
+    df_print: paged
+runtime: html
+---
+
+```{r setup, include=FALSE, message = FALSE}
+library(ComplexHeatmap)
+library(circlize)
+library(tidyverse)
+library(dichromat)
+library(dplyr)
+```
+
+#### Figure 4 data
+```{r import data}
+
+set.seed(1847)
+
+data <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Average_expression_ROS_RNS.txt", header =T, row.names =1, sep = "\t")
+
+head(data)
+dim(data)
+data[,"Group"]
+
+RNS <- data[1:7,]
+ROS <- data[8:14,]
+```
+
+```{r heatmap}
+my_colours <- c("white","#8a79f4","#f0d359","#ff70c3","#53ecc0",
+                "#af0043","#bae179","#ec5646","#4f9059","#af3c00",
+                "royalblue")
+
+gradient_base <- my_colours[1]
+
+my_gradients <- lapply(my_colours[2:11], 
+                    function(x) 
+                      {
+                      colorRampPalette(c(gradient_base, x))(5)})
+
+CA = HeatmapAnnotation(
+    empty = anno_empty(border = FALSE),
+    foo = anno_block(gp = gpar(fill = c("yellowgreen", "darkgreen", "burlywood4")), 
+                     labels = c("Tissue", "Ostreobium-layer", "Skeleton"),
+                     labels_gp = gpar(col = "white", fontsize = 12, fontface = "bold")))
+
+
+
+RA1 <- rowAnnotation(foo = anno_block(labels = c("RNS")))
+RA2 <- rowAnnotation(count = anno_barplot(RNS$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(RNS[,19]))
+#RNS_markers <- rowAnnotation(textbox = anno_text(RNS[,19]))
+
+rns_plot <- Heatmap(as.matrix(log2(RNS[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        top_annotation = CA,
+        left_annotation = RA1,
+        right_annotation = RA2,
+        name = "RNS-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = RNS_markers,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"),
+        col = my_gradients[[5]])
+
+RA3 <- rowAnnotation(foo = anno_block(labels = c("ROS")))
+RA4 <- rowAnnotation(count = anno_barplot(ROS$Transcripts_count, 
+                                          add_numbers = TRUE, axis = FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(ROS[,19]))
+#ROS_markers <- rowAnnotation(textbox = anno_text(ROS[,19]))
+
+ros_plot <- Heatmap(as.matrix(log2(ROS[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        left_annotation = RA3,
+        name = "ROS-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        right_annotation = RA4,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"),
+        col = my_gradients[[10]])
+
+
+ht_list1 = rns_plot  %v% ros_plot 
+draw(ht_list1, heatmap_legend_side = "right")
+```
