@@ -1,0 +1,1 @@
+"JH1T"	"JH3T"	"JH4T"	"JH5T"	"JH6T"	"JH7T"	"JH1O"	"JH3O"	"JH4O"	"JH5O"	"JH6O"	"JH7O"	"JH1S"	"JH3S"	"JH4S"	"JH5S"	"JH6S"	"JH7S"	"id"	"NCBI"	"cellular"	"Domain"	"col4"	"col5"	"col6"	"col7"	"col8"	"col9"	"col10"
