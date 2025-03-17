@@ -1,0 +1,170 @@
+---
+title: "Figure 1"
+author: " Kshitij Tandon"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+    css: styles.css  # Custom CSS for font size
+    df_print: paged
+runtime: html
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(reshape2)
+library(patchwork)
+library(VennDiagram)
+library(UpSetR)
+library(ggvenn)
+```
+
+
+#### Figure 1B rRNA
+```{r, rRNA based, warnings=FALSE, message =FALSE}
+rRNA_total_counts <- 28717
+rRNA_archaea_counts = 840
+rRNA_archaea_proportion = rRNA_archaea_counts/rRNA_total_counts
+rRNA_bacteria_counts = 24233
+rRNA_bacteria_proportion = rRNA_bacteria_counts/rRNA_total_counts
+rRNA_eukaryota_counts = 3644
+rRNA_eukaryota_proportion = rRNA_eukaryota_counts/rRNA_total_counts
+
+rRNA_proportions_df <- data.frame(`rRNA composition` = factor(c("Archaea (2.92%)","Eukayota (12.68%)","Bacteria (84.38%)"), levels = c("Archaea (2.92%)","Eukayota (12.68%)","Bacteria (84.38%)")),
+  Proportion = c(rRNA_archaea_proportion, rRNA_eukaryota_proportion,rRNA_bacteria_proportion)
+)
+
+rRNA_coral_plot <- ggplot(rRNA_proportions_df, aes(x = "rRNA", y = Proportion, fill = rRNA.composition)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_manual(values = c("palevioletred1","mediumpurple1","limegreen")) 
+```
+
+#### Figure 1B Transcript annotation
+```{r, Transcript annotation, warnings=FALSE, message =FALSE}
+transcripts_total_count <- 780431
+tax_annotated_transcripts <- 371193
+tax_annotation_proportion <- tax_annotated_transcripts/transcripts_total_count
+no_annotation_transcripts <- transcripts_total_count - tax_annotated_transcripts
+no_annotation_transcripts_proportion <- no_annotation_transcripts/transcripts_total_count
+
+tax_transcript_proportions_df <- data.frame(`Transcripts annotation` = factor(c("No annotation (52.44%)","Annotated (47.56%)"), levels = c("No annotation (52.44%)", "Annotated (47.56%)")),
+  Proportion = c(no_annotation_transcripts_proportion, tax_annotation_proportion)
+)
+
+tax_transcripts_plot <- ggplot(tax_transcript_proportions_df, aes(x = "Transcripts", y = Proportion, fill = Transcripts.annotation)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal()  +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_manual(values = c("grey90","coral")) 
+```
+
+#### Figure 1B Annotated transcripts taxonomy proportions
+```{r annotated transcripts distribution domain level, warnings=FALSE, message =FALSE}
+tax_annotated_transcripts <- 259826 #this count is without 20470 unclassified)
+
+archaea_counts = 5131
+archaea_proportion = archaea_counts/tax_annotated_transcripts
+bacteria_counts = 116900
+bacteria_proportion = bacteria_counts/tax_annotated_transcripts
+eukaryota_counts = 136366
+eukaryota_proportion = eukaryota_counts/tax_annotated_transcripts
+viruses_counts = 1429
+viruses_proportion = viruses_counts/tax_annotated_transcripts
+
+tax_annotated_proportions_df <- data.frame(Taxonomy = factor(c("Viruses (0.54%)","Archaea (1.97%)","Bacteria (44.99%)","Eukayota (52.44%)"), levels = c("Viruses (0.54%)","Archaea (1.97%)","Bacteria (44.99%)","Eukayota (52.44%)")),
+  Proportion = c(viruses_proportion,archaea_proportion, bacteria_proportion, eukaryota_proportion)
+)
+tax_annotated_coral_plot <- ggplot(tax_annotated_proportions_df, aes(x = "Taxonomy", y = Proportion, fill = Taxonomy)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_manual(values = c( "skyblue","palevioletred1","limegreen","mediumpurple1")) 
+```
+
+```{r, Figure 1b plot,warnings=FALSE, message =FALSE}
+wrap_plots(rRNA_coral_plot, tax_transcripts_plot, tax_annotated_coral_plot, guides = "collect")
+
+```
+
+#### Figure 1C
+```{r UpSet plot, message =FALSE}
+
+count_matrix_TMM <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Expressed_transcripts_isoform_avg_TMM.txt", header =T, sep ="\t", row.names= 1)
+
+
+tissue <- count_matrix_TMM[,1:6]
+ostreobium <- count_matrix_TMM[,7:12]
+skeleton <- count_matrix_TMM[,13:18]
+
+expressed_tissue <- tissue[rowSums(tissue) > 0, ]
+expressed_ostreobium <- ostreobium[rowSums(ostreobium) > 0, ]
+expressed_skeleton <- skeleton[rowSums(skeleton) > 0 ,]
+
+expressed_tissue_list <- as.data.frame(rownames(expressed_tissue))
+dim(expressed_tissue_list)
+
+expressed_ostreobium_list <- as.data.frame(rownames(expressed_ostreobium))
+dim(expressed_ostreobium_list)
+
+expressed_skeleton_list <- as.data.frame(rownames(expressed_skeleton))
+dim(expressed_skeleton_list)
+```
+
+The above filtering resulted in 
+108937, 186010, 200576 transcripts in Tissue, Ostrebium-layer and Skeleton, respectively.
+
+```{r common isoforms plot, fig.width=11,fig.height=5.2}
+common_transcripts <- c(as.list(expressed_tissue_list),
+                    as.list(expressed_ostreobium_list),
+                    as.list(expressed_skeleton_list))
+names(common_transcripts) <- c("Tissue","Ostreobium-layer","Skeleton")
+
+upset(fromList(common_transcripts),
+      main.bar.color = c("black","burlywood4","black","black",
+                         "black","darkgreen","yellowgreen"),
+      sets.bar.color = c("burlywood4","darkgreen","yellowgreen"),
+      text.scale = c(2, 2,2,2,2),
+      point.size = 5,
+      order.by = "freq",
+      set_size.show = TRUE)
+```
+
+
+#### Figure 1D
+```{r Figure 1D plot, message=FALSE, warning = FALSE}
+KO_list <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/KO_annotation_all_layers.txt", header = T, row.names =1)
+
+OG_list <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/OG_annotation_all_layers.txt", header = T, row.names =1)         
+
+taxonomy_id <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Venn_expressed_tax.txt")
+
+expressed_and_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Expressed_and_tax_annotated_transcripts.txt", header =T, row.names = 1, sep = "\t")
+
+all_expressed <- as.character(taxonomy_id$V1)
+expressed_and_tax <- as.character(expressed_and_tax$id)
+KO <- as.character(KO_list$extracted_text)
+OG <- as.character(OG_list$extracted_text)
+
+venn_list <- list("Expressed\nTranscripts" = all_expressed,
+                  "Expressed & taxonomically\nannotated" = expressed_and_tax,
+                  KO = KO,
+                  OG = OG)
+
+ggvenn(venn_list, fill_color =c("#bae179", "orange",'royalblue', 'red'), stroke_size = 0.5,set_name_color = 1,
+       fill_alpha = 0.5, stroke_linetype = "dashed", stroke_alpha = 0.5, text_size = 3, set_name_size = 3)
+```

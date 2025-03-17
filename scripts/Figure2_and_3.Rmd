@@ -1,0 +1,190 @@
+---
+title: "Figure 2 and 3"
+author: " Kshitij Tandon"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+    css: styles.css  # Custom CSS for font size
+    df_print: paged
+runtime: html
+---
+
+```{r setup, include=FALSE, message = FALSE}
+library(ComplexHeatmap)
+library(circlize)
+library(tidyverse)
+library(dichromat)
+library(dplyr)
+```
+
+#### Figure 2 and 3 data 
+```{r import data, message= FALSE, warning=FALSE}
+set.seed(18457)
+data <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Average_expression_metabolic_markers.txt", header =T, row.names =1, sep = "\t")
+
+carbon <- data[1:11,]
+photosynthesis <- data[12:23,]
+nitrogen <- data[24:34,]
+sulphur <- data[35:45,]
+sugar_export <- data[46:47,]
+```
+
+#### Figure 2 plot
+```{r heatmaps,message=FALSE, warning=FALSE}
+my_colours <- c("white","#8a79f4","#f0d359","#ff70c3","#53ecc0",
+                "#af0043","#bae179","#ec5646","#4f9059","#af3c00",
+                "coral")
+
+gradient_base <- my_colours[1]
+
+my_gradients <- lapply(my_colours[2:11], 
+                    function(x) 
+                      {
+                      colorRampPalette(c(gradient_base, x))(5)})
+
+CA = HeatmapAnnotation(
+    empty = anno_empty(border = FALSE),
+    foo = anno_block(gp = gpar(fill = c("yellowgreen", "darkgreen", "burlywood4")),
+                     labels = c("Tissue", "Ostreobium-layer", "Skeleton"),
+                     labels_gp = gpar(col = "white", fontsize = 12, fontface = "bold")))
+
+RA1 <- rowAnnotation(foo = anno_block(labels = c("Carbon-fixation")))
+RA2 <- rowAnnotation(count = anno_barplot(carbon$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(carbon[,19]))
+
+carbon_fixation <- Heatmap(as.matrix(log2(carbon[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        top_annotation = CA,
+        left_annotation = RA1,
+        right_annotation = RA2,
+        name = "C-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = carbon_markers,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"),
+        col = my_gradients[[1]])
+        #col = col_fun)
+
+RA3 <- rowAnnotation(foo = anno_block(labels = c("Photosynthesis")))
+RA4 <- rowAnnotation(count = anno_barplot(photosynthesis$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(photosynthesis[,19]))
+#photosynthesis_markers <- rowAnnotation(textbox = anno_text(photosynthesis[,19]))
+
+Photosynthesis <- Heatmap(as.matrix(log2(photosynthesis[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        left_annotation = RA3,
+        right_annotation = RA4,
+        name = "P-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = photosynthesis_markers,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"),
+        col = my_gradients[[8]])
+
+RA5 <- rowAnnotation(foo = anno_block(labels = c("Sugar \n export")))
+RA6 <- rowAnnotation(count = anno_barplot(sugar_export$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(sugar_export[,19]))
+#sugar_markers <- rowAnnotation(textbox = anno_text(sugar_export[,19]))
+
+sugar_exporter <- Heatmap(as.matrix(log2(sugar_export[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        left_annotation = RA5,
+        right_annotation = RA6,
+        name = "Su-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = sugar_markers,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"), 
+        col = my_gradients[[7]])
+
+
+ht_list1 = carbon_fixation  %v% Photosynthesis %v% sugar_exporter
+
+draw(ht_list1, heatmap_legend_side = "right")
+
+
+
+```
+
+#### Figure 3A heatmap
+```{r, Figure 3A, message=FALSE, warning=FALSE}
+
+RA7 <- rowAnnotation(foo = anno_block(labels = c("Nitrogen")))
+RA8 <- rowAnnotation(count = anno_barplot(nitrogen$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(nitrogen[,19]))
+#nitrogen_markers <- rowAnnotation(textbox = anno_text(nitrogen[,19]))
+
+Nitrogen_metabolism <- Heatmap(as.matrix(log2(nitrogen[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        left_annotation = RA7,
+        right_annotation = RA8,
+        top_annotation = CA,
+        name = "N-log2(expr. + 1)", column_title = NULL,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = nitrogen_markers,
+         heatmap_legend_param = list(title_position ="leftcenter-rot"),
+        col = my_gradients[[9]])
+
+
+draw(Nitrogen_metabolism, heatmap_legend_side = "right")
+```
+
+#### Figure 3B heatmap
+```{r, Figure 3B, message=FALSE, warning=FALSE}
+RA9 <- rowAnnotation(foo = anno_block(labels = c("Sulphur")))
+RA10 <- rowAnnotation(count = anno_barplot(sulphur$Transcripts_count,
+                                          add_numbers = TRUE, axis =FALSE),
+                                          show_annotation_name = FALSE,
+                     textbox = anno_text(sulphur[,19]))
+#sulphur_markers <- rowAnnotation(textbox = anno_text(sulphur[,19]))
+
+Sulphur_metabolism <- Heatmap(as.matrix(log2(sulphur[,1:18]+1)),
+        column_split = rep(1:3, each = 6), 
+        cluster_columns = F, 
+        cluster_rows = F, 
+        left_annotation = RA9,
+        right_annotation =RA10,
+        name = "S-log2(expr. + 1)", column_title = NULL,
+        top_annotation = CA,
+        show_column_names = FALSE,
+        show_row_names = FALSE,
+        border_gp = gpar(col = "black", lty = 1 ),
+        rect_gp = gpar(col ="white", lwd =1),
+        #right_annotation = sulphur_markers,
+        heatmap_legend_param = list(title_position ="leftcenter-rot"), 
+        col = my_gradients[[10]])
+
+ht_list3 = Sulphur_metabolism
+draw(Sulphur_metabolism, heatmap_legend_side = "right")
+```
