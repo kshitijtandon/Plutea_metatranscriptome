@@ -37,13 +37,13 @@ We will load three files for this
 - Metadata file
 
 ```{r data input, message = FALSE, warning=FALSE}
-meta <-read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Metadata_table.txt", sep = "\t", header = T, row.names = 1)
+meta <-read.table("../data/Metadata_table.txt", sep = "\t", header = T, row.names = 1)
 meta <- sample_data(meta)
 
-rRNA_abundance <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Arc_Bac_Euk_rRNA_abundance.txt", header =T, row.names =1)
+rRNA_abundance <- read.table("../data/Arc_Bac_Euk_rRNA_abundance.txt", header =T, row.names =1)
 rRNA_abundance <- otu_table(rRNA_abundance, taxa_are_rows = T)
 
-rRNA_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Arc_Bac_Euk_rRNA_tax.txt", sep ="\t", header =T, row.names = 1)
+rRNA_tax <- read.table("../data/Arc_Bac_Euk_rRNA_tax.txt", sep ="\t", header =T, row.names = 1)
 rRNA_tax <- as.matrix(rRNA_tax)
 rRNA_tax <- tax_table(rRNA_tax)
 

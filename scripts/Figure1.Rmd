@@ -104,7 +104,7 @@ wrap_plots(rRNA_coral_plot, tax_transcripts_plot, tax_annotated_coral_plot, guid
 #### Figure 1C
 ```{r UpSet plot, message =FALSE}
 
-count_matrix_TMM <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Expressed_transcripts_isoform_avg_TMM.txt", header =T, sep ="\t", row.names= 1)
+count_matrix_TMM <- read.table("../data/Expressed_transcripts_isoform_avg_TMM.txt", header =T, sep ="\t", row.names= 1)
 
 
 tissue <- count_matrix_TMM[,1:6]
@@ -147,13 +147,13 @@ upset(fromList(common_transcripts),
 
 #### Figure 1D
 ```{r Figure 1D plot, message=FALSE, warning = FALSE}
-KO_list <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/KO_annotation_all_layers.txt", header = T, row.names =1)
+KO_list <- read.table("../data/KO_annotation_all_layers.txt", header = T, row.names =1)
 
-OG_list <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/OG_annotation_all_layers.txt", header = T, row.names =1)         
+OG_list <- read.table("../data/OG_annotation_all_layers.txt", header = T, row.names =1)         
 
-taxonomy_id <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Venn_expressed_tax.txt")
+taxonomy_id <- read.table("../data/Venn_expressed_tax.txt")
 
-expressed_and_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Expressed_and_tax_annotated_transcripts.txt", header =T, row.names = 1, sep = "\t")
+expressed_and_tax <- read.table("../data/Expressed_and_tax_annotated_transcripts.txt", header =T, row.names = 1, sep = "\t")
 
 all_expressed <- as.character(taxonomy_id$V1)
 expressed_and_tax <- as.character(expressed_and_tax$id)

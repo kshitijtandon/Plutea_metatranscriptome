@@ -28,7 +28,7 @@ library(dplyr)
 
 set.seed(1847)
 
-data <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Average_expression_ROS_RNS.txt", header =T, row.names =1, sep = "\t")
+data <- read.table("../data/Average_expression_ROS_RNS.txt", header =T, row.names =1, sep = "\t")
 
 head(data)
 dim(data)

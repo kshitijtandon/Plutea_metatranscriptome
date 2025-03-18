@@ -26,7 +26,7 @@ library(dplyr)
 #### Figure 2 and 3 data 
 ```{r import data, message= FALSE, warning=FALSE}
 set.seed(18457)
-data <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Average_expression_metabolic_markers.txt", header =T, row.names =1, sep = "\t")
+data <- read.table("../data/Average_expression_metabolic_markers.txt", header =T, row.names =1, sep = "\t")
 
 carbon <- data[1:11,]
 photosynthesis <- data[12:23,]
