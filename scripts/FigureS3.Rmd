@@ -1,0 +1,55 @@
+---
+title: "Figure S1 and S2"
+author: " Kshitij Tandon"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+    css: styles.css  # Custom CSS for font size
+    df_print: paged
+runtime: html
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(phyloseq)
+library(metagMisc)
+library(patchwork)
+library(ggrepel)
+library(reshape2)
+```
+
+
+```{r import data}
+
+COG_counts<- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Corrected_figures_and_files/Fig S3/EGGNOG-COG_COUNTS.txt", sep = "\t", header = T, row.names =1 )
+
+dim(COG_counts)
+head(COG_counts)
+```
+
+```{r plot, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+df <- melt(COG_counts)
+df = df[order(df$value),]
+df$functional.categories <- factor(df$functional.categories, levels = unique(df$functional.categories))
+
+colnames(df) <- c("functional.categories","COG classes","Compartments", "Counts")
+
+ggplot(data=df, aes(x=Counts, y=functional.categories, fill=Compartments)) +
+geom_bar(stat="identity", position=position_dodge()) +
+  scale_fill_manual(values = c("yellowgreen","darkgreen",
+                                            "burlywood4")) + 
+  labs(x = "Counts", y = "Functional Categories")+
+  theme_bw()+theme(panel.grid = element_blank(), text = element_text(size= 10), axis.text = element_text(color= "black"),legend.position = "bottom",
+        legend.justification = "right") 
+```
