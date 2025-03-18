@@ -1,0 +1,637 @@
+---
+title: "Figure S1 and S2"
+author: " Kshitij Tandon"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: yes
+    toc: yes
+    toc_float: yes
+    toc_depth: 5
+    theme: cosmo
+    code_folding: hide
+    css: styles.css  # Custom CSS for font size
+    df_print: paged
+runtime: html
+---
+
+
+```{r setup, include=FALSE, message = FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(phyloseq)
+library(metagMisc)
+library(patchwork)
+library(here)
+```
+
+### Preparing data for Figure S1
+
+We will load three files for this 
+- rRNA abundance file generated from PhyloFlash
+- rRNA Taxonomy file generated from PhyloFlash
+- Metadata file
+
+```{r data input, message = FALSE, warning=FALSE}
+meta <-read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Metadata_table.txt", sep = "\t", header = T, row.names = 1)
+meta <- sample_data(meta)
+
+rRNA_abundance <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Arc_Bac_Euk_rRNA_abundance.txt", header =T, row.names =1)
+rRNA_abundance <- otu_table(rRNA_abundance, taxa_are_rows = T)
+
+rRNA_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Arc_Bac_Euk_rRNA_tax.txt", sep ="\t", header =T, row.names = 1)
+rRNA_tax <- as.matrix(rRNA_tax)
+rRNA_tax <- tax_table(rRNA_tax)
+
+
+physeq <- phyloseq(rRNA_abundance,rRNA_tax, meta)
+```
+
+- Get rid of Chloroplast and Mitochondrial rRNAs
+
+```{r}
+physeq <- subset_taxa(physeq, Level4 != "Chloroplast")
+physeq <- subset_taxa(physeq, Level5 != "Mitochrondria")
+```
+
+### Split into compartments, Coral Tissue, Ostreobium-layer and Skeleton
+
+```{r compartment specific physeq, message = FALSE, warning=FALSE}
+tissue_rRNA_physeq <- subset_samples(physeq, Compartment == "Tissue")
+ostreobium_rRNA_physeq <- subset_samples(physeq, Compartment == "Ostreobium-layer")
+skeleton_rRNA_physeq <- subset_samples(physeq, Compartment == "Skeleton")
+```
+
+### Perform relative abundance transformation
+
+Note: We also clubbed any taxa below 5% to **Others**
+
+```{r Ts, Os, Sk at Level2  Phylum, message = FALSE, warning=FALSE}
+tissue_rRNA_physeq_plot <- tax_glom(tissue_rRNA_physeq, taxrank = 'Level2')
+tissue_rRNA_physeq_plot <- transform_sample_counts(tissue_rRNA_physeq_plot, 
+                                              function(x) 100* {x/sum(x)})
+tissue_rRNA_physeq_plot <- psmelt(tissue_rRNA_physeq_plot)
+taxon_sums <- aggregate(Abundance ~ Level2, data = tissue_rRNA_physeq_plot, sum)
+low_prop_taxons <- taxon_sums$Level2[taxon_sums$Abundance < 0.05]
+tissue_rRNA_physeq_plot$Level2 <- as.character(tissue_rRNA_physeq_plot$Level2)
+
+tissue_rRNA_physeq_plot$Level2 <- ifelse(tissue_rRNA_physeq_plot$Level2 %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(tissue_rRNA_physeq_plot$Level2 == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        tissue_rRNA_physeq_plot$Level2))
+
+tissue_rRNA_physeq_plot <- tissue_rRNA_physeq_plot %>% 
+                        arrange(ifelse(Level2 == "Others (<5%)", 
+                                       Inf, ifelse(Level2 == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+tissue_rRNA_physeq_plot$Level2 <- factor(tissue_rRNA_physeq_plot$Level2, 
+                                    levels = unique(tissue_rRNA_physeq_plot$Level2))
+
+ostreobium_rRNA_physeq_plot <- tax_glom(ostreobium_rRNA_physeq, taxrank = 'Level2')
+ostreobium_rRNA_physeq_plot <- transform_sample_counts(ostreobium_rRNA_physeq_plot, 
+                                                  function(x) 100* {x/sum(x)})
+ostreobium_rRNA_physeq_plot <- psmelt(ostreobium_rRNA_physeq_plot)
+
+taxon_sums <- aggregate(Abundance ~ Level2, data = ostreobium_rRNA_physeq_plot, sum)
+low_prop_taxons <- taxon_sums$Level2[taxon_sums$Abundance < 0.05]
+ostreobium_rRNA_physeq_plot$Level2 <- as.character(ostreobium_rRNA_physeq_plot$Level2)
+
+ostreobium_rRNA_physeq_plot$Level2 <- ifelse(ostreobium_rRNA_physeq_plot$Level2 %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(ostreobium_rRNA_physeq_plot$Level2 == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        ostreobium_rRNA_physeq_plot$Level2))
+
+ostreobium_rRNA_physeq_plot <- ostreobium_rRNA_physeq_plot %>% 
+                        arrange(ifelse(Level2 == "Others (<5%)", 
+                                       Inf, ifelse(Level2 == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+
+ostreobium_rRNA_physeq_plot$Level2 <- factor(ostreobium_rRNA_physeq_plot$Level2, 
+                                        levels = unique(ostreobium_rRNA_physeq_plot$Level2))
+
+skeleton_rRNA_physeq_plot <- tax_glom(skeleton_rRNA_physeq, taxrank = 'Level2')
+
+skeleton_rRNA_physeq_plot <- transform_sample_counts(skeleton_rRNA_physeq_plot, 
+                                                function(x) 100 * {x/sum(x)})
+
+skeleton_rRNA_physeq_plot <- psmelt(skeleton_rRNA_physeq_plot)
+
+taxon_sums <- aggregate(Abundance ~ Level2, 
+                        data = skeleton_rRNA_physeq_plot, sum)
+
+low_prop_taxons <- taxon_sums$Level2[taxon_sums$Abundance < 0.05]
+
+skeleton_rRNA_physeq_plot$Level2 <- as.character(skeleton_rRNA_physeq_plot$Level2)
+
+skeleton_rRNA_physeq_plot$Level2 <- ifelse(skeleton_rRNA_physeq_plot$Level2 %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(skeleton_rRNA_physeq_plot$Level2 == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        skeleton_rRNA_physeq_plot$Level2))
+
+skeleton_rRNA_physeq_plot <- skeleton_rRNA_physeq_plot %>% 
+                        arrange(ifelse(Level2 == "Others (<3%)", 
+                                       Inf, ifelse(Level2 == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+skeleton_rRNA_physeq_plot$Level2 <- factor(skeleton_rRNA_physeq_plot$Level2, 
+                                      levels = unique(skeleton_rRNA_physeq_plot$Level2))
+
+```
+
+- As we want to keep the colors consistent and also there are many taxa, we defined
+all the colors exclusively
+```{r colors, message = FALSE, warning=FALSE}
+unique_taxa <- unique(c(tissue_rRNA_physeq_plot$Level2, 
+                        ostreobium_rRNA_physeq_plot$Level2,
+                        skeleton_rRNA_physeq_plot$Level2))
+
+categories <- c("Amorphea","Archaeplastida","SAR","Eukaryota_uncl","Discoba","Cyanobacteria", "Proteobacteria","Bacteroidota", "Bacteria_uncl",
+                "Cryptophyceae", "Others (<5%)","Myxococcota", "Planctomycetota","Acidobacteria","Verrucomicrobiota","Desulfobacterota","SAR324 cladeMarine group B",
+                 "Chloroflexi", "NB1-j","Actinobacteriota","Bdellovibrionota", "Spirochaetota","Thermoplasmatota","Gemmatimonadota", "Crenarchaeota", "Campylobacterota",
+                "Firmicutes", "Haptophyta","Nanoarchaeota", "PAU34f","Hydrogenedentes", "Patescibacteria", "WPS-2", "Zixibacteria", "Nitrospirota", "Actothermia",
+                "Fibrobacterota","Entotheonellaeota","Latescibacterota","Sumerlaeota","Marinimicrobia SAR406 clade","Sva0485","Calditrichota","Poribacteria","Nitrospinota",
+                "Excavata","Asgardarchaeota","Archa_uncl","Dependentiae","Elusimicrobiota","Aenigmarchaeota","Iainarchaeota","FW113","Halobacterota","Modulibacteria",
+                "Armatimonadota","WS2","Micrarchaeota","Fusobacteriota","Margulisbacteria","Schekmanbacteria","FCPU426")
+                    
+distinct_colors <- c("#ff7f00","#cab2d6","#1f77b4", "grey70",
+                     "#e377c2","#2ca02c", "#17becf","#756bb1", "gray80",
+                     "#bcbd22", "black","#98df8a","#ff9896","#a1d99b","#aec7e8",
+                     "#ffbb78", "#ffed6f","#c5b0d5","#c49c94",
+                     "#d62728", "#d9d9d9","#dbdb8d", "#c7e9c0","#8ca252",
+                     "#b5cf6b", "#9edae5", "#cedb9c","#9e9ac8",
+                     "#e6550d", "#ce6dbd","#fdae6b","#fdd0a2","#bdbdbd",
+                     "#e7ba52", "#bcbddc","#dadaeb","#c6dbef","#de9ed6", 
+                     "#7f7f7f", "#3182bd","#6baed6","#9ecae1","#843c39", 
+                     "#ad494a", "#d6616b","#e7969c","#7b4173","#a55194",
+                     "#5254a3", "#637939","#8c6d31","#bd9e39","#e7cb94",  
+                     "#fd8d3c", "#31a354","#74c476","#969696","pink","khaki","coral","royalblue","magenta")
+
+color_mapping <- setNames(distinct_colors, categories)
+
+
+```
+
+### Plotting Figure S1 of the Manuscript
+
+```{r Tissue at Level2, message = FALSE, warning=FALSE}
+tissue_rRNA_plot  <- ggplot(tissue_rRNA_physeq_plot, aes_string(x = "Sample", 
+                                                      y = "Abundance", 
+                                                      fill = "Level2")) +
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica", color = "black"), 
+                           legend.title = element_text(family = "Helvetica", color = "black")) +
+                      theme(plot.subtitle = element_text(vjust = 1), 
+                            plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, color ="black", family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 8, nrow = 4, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format()) + 
+                      coord_flip() +
+                      ggtitle("Tissue")
+```
+
+```{r Ostreobium at Level2, message = FALSE, warning=FALSE}
+ostreobium_rRNA_plot  <- ggplot(ostreobium_rRNA_physeq_plot, aes_string(x = "Sample", 
+                                                              y = "Abundance", 
+                                                              fill = "Level2")) +
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica", color = "black"), 
+                           legend.title = element_text(family = "Helvetica", color = "black")) +
+                      theme(plot.subtitle = element_text(vjust = 1), 
+                            plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, color ="black", family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 8, nrow = 4, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format()) + 
+                      coord_flip() +
+                      ggtitle("Ostreobium")
+```
+
+```{r skeleton at Level2, message = FALSE, warning=FALSE}
+skeleton_rRNA_plot  <- ggplot(skeleton_rRNA_physeq_plot, aes_string(x = "Sample", 
+                                                          y = "Abundance", 
+                                                          fill = "Level2")) +  
+
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica",
+                                                      color = "black"), 
+                           legend.title = element_text(family = "Helvetica", 
+                                                       color = "black")) +
+                      theme(plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, 
+                                                       color ="black", 
+                                                       family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 8, nrow = 8, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format())+
+                      coord_flip() +
+                      ggtitle("Skeleton")
+```
+
+
+#### Plotting Figure S1 of the Manuscript
+
+```{r rRNA based plots, message = FALSE, warning=FALSE,fig.height=12, fig.width=16}
+barplots_microbiome_rRNA_abundance <- wrap_plots(tissue_rRNA_plot,
+                                           ostreobium_rRNA_plot, 
+                                           skeleton_rRNA_plot,
+                                           ncol = 1, nrow = 3,
+                                           tag_level = 'keep') + 
+                                plot_annotation(title = 'rRNA based abundance
+                                                profiles', tag_levels = 'A', 
+                                                theme = theme(plot.title = element_text(size = 14,face = "bold", hjust = 0.5, family = "Helvetica")))
+
+barplots_microbiome_rRNA_abundance
+# ggsave("Supplementary_Figure_S1.png", 
+#        plot = barplots_microbiome_rRNA_abundance ,
+#        device = "png",width = 16, height = 12)
+```
+
+
+### Preparing data for Figure S2
+
+Here were are using only the expressed transcripts and the `meta` table from above
+
+```{r Expressed Transcriptome data, message=FALSE, warning=FALSE}
+#prepare metadata table to be used with all the compartments 
+
+meta <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Metadata_table.txt", sep = "\t", header = T, row.names = 1)
+
+tissue_meta <- meta[1:6,]
+tissue_meta <- as.data.frame(tissue_meta)
+tissue_meta <- sample_data(tissue_meta)
+
+tissue_otu <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Tissue_expressed_transcripts_abundance.txt", header =T, row.names =1)
+tissue_otu <- otu_table(tissue_otu, taxa_are_rows = T)
+
+tissue_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Tissue_expressed_transcripts_taxonomy.txt", sep ="\t", header =T, row.names = 1)
+
+tissue_tax <- as.matrix(tissue_tax)
+tissue_tax <- tax_table(tissue_tax)
+
+
+ostreobium_meta <- meta[7:12,]
+ostreobium_meta <- as.data.frame(ostreobium_meta)
+ostreobium_meta <- sample_data(ostreobium_meta)
+
+ostreobium_otu <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Ostreobium_expressed_transcripts_abundance.txt", header =T, row.names =1)
+ostreobium_otu <- otu_table(ostreobium_otu, taxa_are_rows = T)
+
+ostreobium_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Ostreobium_expressed_transcripts_taxonomy.txt", sep ="\t", header =T, row.names = 1)
+ostreobium_tax <- as.matrix(ostreobium_tax)
+ostreobium_tax <- tax_table(ostreobium_tax)
+
+skeleton_meta <- meta[13:18,]
+skeleton_meta <- as.data.frame(skeleton_meta)
+skeleton_meta <- sample_data(skeleton_meta)
+
+skeleton_otu <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Skeleton_expressed_transcripts_abundance.txt", header =T, row.names =1)
+skeleton_otu <- otu_table(skeleton_otu, taxa_are_rows = T)
+
+skeleton_tax <- read.table("/Users/kshitijt/OneDrive - The University of Melbourne/Desktop/Melbourne_work/UNIMEL_DP/Analysis/RNA-Seq/Analysis2_isoformTMM_based/Manuscript/Science Advances/scripts/Skeleton_expressed_transcripts_taxonomy.txt", sep ="\t", header =T, row.names = 1)
+skeleton_tax <- as.matrix(skeleton_tax)
+skeleton_tax <- tax_table(skeleton_tax)
+
+tissue_physeq <- phyloseq(tissue_otu, tissue_tax, tissue_meta)
+
+tissue_physeq<- subset_taxa(tissue_physeq, 
+                            Domain != "Unclassified_taxa")
+
+ostreobium_physeq <- phyloseq(ostreobium_otu, ostreobium_tax, ostreobium_meta)
+
+ostreobium_physeq<- subset_taxa(ostreobium_physeq, 
+                                Domain != "Unclassified_taxa")
+
+skeleton_physeq <- phyloseq(skeleton_otu, skeleton_tax, skeleton_meta)
+
+skeleton_physeq<- subset_taxa(skeleton_physeq, 
+                              Domain != "Unclassified_taxa")
+
+
+```
+
+
+```{r, Ts, Os, Sk at phylum, message = FALSE, warning=FALSE}
+
+tissue_physeq_plot <- tax_glom(tissue_physeq, taxrank = 'phylum')
+tissue_physeq_plot <- transform_sample_counts(tissue_physeq_plot, 
+                                              function(x) 100* {x/sum(x)})
+tissue_physeq_plot <- psmelt(tissue_physeq_plot)
+
+taxon_sums <- aggregate(Abundance ~ phylum, data = tissue_physeq_plot, sum)
+low_prop_taxons <- taxon_sums$phylum[taxon_sums$Abundance < 0.05]
+tissue_physeq_plot$phylum <- as.character(tissue_physeq_plot$phylum)
+
+tissue_physeq_plot$phylum <- ifelse(tissue_physeq_plot$phylum %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(tissue_physeq_plot$phylum == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        tissue_physeq_plot$phylum))
+
+tissue_physeq_plot <- tissue_physeq_plot %>% 
+                        arrange(ifelse(phylum == "Others (<5%)", 
+                                       Inf, ifelse(phylum == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+tissue_physeq_plot$phylum <- factor(tissue_physeq_plot$phylum, 
+                                    levels = unique(tissue_physeq_plot$phylum))
+
+ostreobium_physeq_plot <- tax_glom(ostreobium_physeq, taxrank = 'phylum')
+ostreobium_physeq_plot <- transform_sample_counts(ostreobium_physeq_plot, 
+                                                  function(x) 100* {x/sum(x)})
+ostreobium_physeq_plot <- psmelt(ostreobium_physeq_plot)
+
+taxon_sums <- aggregate(Abundance ~ phylum, data = ostreobium_physeq_plot, sum)
+low_prop_taxons <- taxon_sums$phylum[taxon_sums$Abundance < 0.05]
+ostreobium_physeq_plot$phylum <- as.character(ostreobium_physeq_plot$phylum)
+
+ostreobium_physeq_plot$phylum <- ifelse(ostreobium_physeq_plot$phylum %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(ostreobium_physeq_plot$phylum == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        ostreobium_physeq_plot$phylum))
+
+ostreobium_physeq_plot <- ostreobium_physeq_plot %>% 
+                        arrange(ifelse(phylum == "Others (<5%)", 
+                                       Inf, ifelse(phylum == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+
+ostreobium_physeq_plot$phylum <- factor(ostreobium_physeq_plot$phylum, 
+                                        levels = unique(ostreobium_physeq_plot$phylum))
+
+skeleton_physeq_plot <- tax_glom(skeleton_physeq, taxrank = 'phylum')
+
+skeleton_physeq_plot <- transform_sample_counts(skeleton_physeq_plot, 
+                                                function(x) 100 * {x/sum(x)})
+
+skeleton_physeq_plot <- psmelt(skeleton_physeq_plot)
+
+taxon_sums <- aggregate(Abundance ~ phylum, 
+                        data = skeleton_physeq_plot, sum)
+
+low_prop_taxons <- taxon_sums$phylum[taxon_sums$Abundance < 0.05]
+
+skeleton_physeq_plot$phylum <- as.character(skeleton_physeq_plot$phylum)
+
+skeleton_physeq_plot$phylum <- ifelse(skeleton_physeq_plot$phylum %in% 
+                                        low_prop_taxons, "Others (<5%)",
+                                      ifelse(skeleton_physeq_plot$phylum == "Unclassified_taxa",
+                                             "Unclassified_taxa",
+                                        skeleton_physeq_plot$phylum))
+
+skeleton_physeq_plot <- skeleton_physeq_plot %>% 
+                        arrange(ifelse(phylum == "Others (<5%)", 
+                                       Inf, ifelse(phylum == "Unclassified_taxa",
+                                                   Inf -1, -Abundance)))
+
+skeleton_physeq_plot$phylum <- factor(skeleton_physeq_plot$phylum, 
+                                      levels = unique(skeleton_physeq_plot$phylum))
+```
+
+```{r define colors, message = FALSE, warning=FALSE}
+unique_taxa <- unique(c(tissue_physeq_plot$phylum, 
+                        ostreobium_physeq_plot$phylum,
+                        skeleton_physeq_plot$phylum))
+
+categories <- c("Alveolata", "Proteobacteria" ,
+                "Metazoa","Fungi", "Cyanobacteria_Melainabacteria_group",
+                "Chlorophyta", "Streptophyta", "Florideophyceae",
+                "Unclassified_Riboviria","Euglenozoa","Stramenopiles",
+                "Bacteroidetes_Chlorobi_group","Bamfordvirae","Actinobacteria",
+                 "Verrucomicrobia", "Orthornavirae","Firmicutes", "Planctomycetes",
+                "Haptophyta", "Unclassified_taxa","Others (<5%)","Rhizaria",
+                "Thaumarchaeota", "Chloroflexi","Acidobacteria","Candidate Bacteria phyla",
+                 "Evosea","Bangiophyceae","Candidatus_Omnitrophica","Gemmatimonadetes",
+                "Thermococci","candidatedivisionZixibacteria", "Stenosarchaea_group",
+                "Candidatus_Marinimicrobia", "Candidatus_Bathyarchaeota",
+                "Methanomada_group", "Thermoplasmata","Candidatus_Woesearchaeota",
+                "Unclassified_Bacteria", "Unclassified_Archaea", "Thermotogae",
+                "Unclassified_ssRNAvirusesShiM-2016",
+                "Unclassified_RNAvirus","Candidatus_Hydrogenedentes", 
+                "Candidatus_Heimdallarchaeota","Unclassified_Euryarchaeota",
+                "Nitrospirae")
+
+
+
+distinct_colors <- c("#ff7f00", "#d62728","#cab2d6","#1f77b4","#2ca02c",
+                     "#74c476", "#e377c2", "#17becf","magenta","#756bb1"
+                     ,"#8c564b" ,"green","#bcbd22", "royalblue","#ff9896",
+                     "#a1d99b","#aec7e8","#ffbb78", "#ffed6f","grey79","black",
+                     "#f7b6d2","#6b6ecf","burlywood", "#c7e9c0","#8ca252","#b5cf6b"
+                     ,"#9edae5", "#393b79","#9c9ede","#cedb9c","#9e9ac8",
+                     "#e6550d", "#ce6dbd","#fdae6b","#fdd0a2","#bdbdbd",
+                     "#e7ba52", "#bcbddc","#dadaeb","#c6dbef","#de9ed6", 
+                     "#7f7f7f", "#3182bd","#6baed6","#9ecae1","#843c39", 
+                     "#ad494a", "#d6616b","#e7969c","#7b4173","#a55194",
+                     "#5254a3", "#637939","#8c6d31","#bd9e39","#e7cb94",  
+                     "#fd8d3c", "#31a354")
+
+color_mapping <- setNames(distinct_colors, categories)
+```
+
+```{r tissue at phylum, message = FALSE, warning=FALSE}
+tissue_plot  <- ggplot(tissue_physeq_plot, aes_string(x = "Sample", 
+                                                      y = "Abundance", 
+                                                      fill = "phylum")) +
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica", 
+                                                      color = "black"), 
+                           legend.title = element_text(family = "Helvetica", 
+                                                       color = "black")) +
+                      theme(plot.subtitle = element_text(vjust = 1), 
+                            plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, 
+                                                       color ="black", 
+                                                       family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 8, nrow = 3, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format()) + 
+                      coord_flip() +
+                      ggtitle("Tissue")
+```
+
+```{r Ostreobium at phylum, message = FALSE, warning=FALSE}
+ostreobium_plot  <- ggplot(ostreobium_physeq_plot, aes_string(x = "Sample", 
+                                                              y = "Abundance", 
+                                                              fill = "phylum")) +
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica", 
+                                                      color = "black"), 
+                           legend.title = element_text(family = "Helvetica", 
+                                                       color = "black")) +
+                      theme(plot.subtitle = element_text(vjust = 1), 
+                            plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, color ="black", 
+                                                       family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 8, nrow = 4, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format()) + 
+                      coord_flip() +
+                      ggtitle("Ostreobium")
+```
+
+```{r skeleton at phylum, message = FALSE, warning=FALSE}
+skeleton_plot  <- ggplot(skeleton_physeq_plot, aes_string(x = "Sample", 
+                                                          y = "Abundance", 
+                                                          fill = "phylum")) +  
+
+theme(plot.subtitle = element_text(vjust = 1), 
+                           legend.text = element_text(family = "Helvetica",
+                                                      color = "black"), 
+                           legend.title = element_text(family = "Helvetica", 
+                                                       color = "black")) +
+                      theme(plot.subtitle = element_text(vjust = 1), 
+                            plot.caption = element_text(vjust = 1), 
+                            axis.title = element_text(family = "Helvetica", 
+                                                      size = "10",
+                                                      face = "bold",
+                                                      color = "black"),
+                            axis.text = element_text(family = "Helvetica", 
+                                                     size = "10",
+                                                     face = "bold",
+                                                     color = "black"), 
+                            plot.title = element_text(family = "Helvetica", 
+                                                      size = "12",
+                                                      face = "bold", 
+                                                      color = "black"), 
+                            panel.background = element_rect(fill = NA)) +
+                            labs(x = "", y = "Relative abundance") +  
+                      geom_bar(stat = "identity", position = "fill") + 
+                      theme(legend.position = "bottom", 
+                            legend.text = element_text(size=10, color ="black",
+                                                       family = "Helvetica"),
+                            legend.key.size = unit(1,"line")) +
+                      scale_fill_manual(values = color_mapping) +
+                      guides(fill = guide_legend(ncol = 9, nrow = 5, 
+                                                 title = "Taxa")) + 
+                      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+                      scale_y_continuous(labels = scales::percent_format())+
+                      coord_flip() +
+                      ggtitle("Skeleton")
+```
+
+
+#### Plotting Figure S2 of the Manuscript
+
+```{r Expressed transcriptome based plots, message = FALSE, warning=FALSE,fig.height=12, fig.width=16}
+barplots_expressed_transcriptome_abundance <- wrap_plots(tissue_plot,
+                                           ostreobium_plot, 
+                                           skeleton_plot,
+                                           ncol = 1, nrow = 3,
+                                           tag_level = 'keep') + 
+                                plot_annotation(title = 'Meta-transcriptome based abundance profiles',tag_levels = 'A', 
+                                theme = theme(plot.title =
+                                        element_text(size = 14,face =
+                                                       "bold",hjust = 0.5, family = "Helvetica")))
+
+barplots_expressed_transcriptome_abundance
+# ggsave("Supplementary_Figure_S2.png", 
+#         plot = barplots_expressed_transcriptome_abundance,
+#         device = "png",width = 16, height = 12)
+```
+
