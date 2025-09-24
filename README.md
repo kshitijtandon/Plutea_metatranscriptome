@@ -9,3 +9,6 @@ Global decline of coral reefs due to climate change necessitates nature-based pr
 - Preprint available at [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.01.09.632055v2)
 
 - Under Review at [Microbiome](https://microbiomejournal.biomedcentral.com)
+
+## Data availabilty 
+Raw sequencing data are deposited in the NCBI Sequence Read Archive (SRA) under BioProject PRJNA1207708.
