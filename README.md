@@ -1,4 +1,7 @@
+![Corals](docs/Coral.png)
+
 # About
+This project is within the umbrella project funded by the Australian Research Council Discovery Project. In this project we have explored for the first time the transcriptionally active microbial and micro-eukaryotic community of stony coral <i>Porites lutea</i>, for more details please read the abstract or the manuscript below.
 This repository hold the scripts used for making the figures for the manuscript "RNAseq sheds light on “who is doing what” in the coral <i>Porites lutea</i>"
 
 ## Abstract 
