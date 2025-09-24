@@ -6,6 +6,6 @@ Global decline of coral reefs due to climate change necessitates nature-based pr
 
 ## Manuscript Status
 
-- Preprint available [here](https://www.biorxiv.org/content/10.1101/2025.01.09.632055v2)
+- Preprint available at [bioRxiv](https://www.biorxiv.org/content/10.1101/2025.01.09.632055v2)
 
-- Under Review at [Micrombiome](https://microbiomejournal.biomedcentral.com)
+- Under Review at [Microbiome](https://microbiomejournal.biomedcentral.com)
