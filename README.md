@@ -20,4 +20,4 @@ This study provides a novel molecular-level understanding of the functional role
 - Manuscript is now published in [Microbiome](https://link.springer.com/article/10.1186/s40168-026-02414-9)
 
 ## Data availabilty 
-Raw sequencing data are deposited in the NCBI Sequence Read Archive (SRA) under BioProject PRJNA1207708.
+Raw sequencing data are deposited in the NCBI Sequence Read Archive (SRA) under BioProject PRJNA1207708. 
